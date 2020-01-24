@@ -1,0 +1,20 @@
+{
+  "name": "d-scan",
+  "version": "0.0.1",
+  "description": "javascript document scanner",
+  "main": "dist/main.js",
+  "types": "./lib/main.d.ts",
+  "scripts": {
+    "watch": "tsc -w",
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coeps-github/d-scan.git"
+  },
+  "author": "coeps",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^3.7.5"
+  }
+}
