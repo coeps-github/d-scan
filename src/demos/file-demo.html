@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>File Demo</title>
+
+    <link rel="stylesheet" type="text/css" href="styles.css">
+
+    <script src="../dependencies/jsfeat.js" type="text/javascript"></script>
+    <script src="../main.js" type="text/javascript"></script>
+    <script>
+        window.onload = function () {
+            const input = document.querySelector('input');
+            const canvas = document.querySelector('canvas');
+            const dscan = new DScan();
+            input.onchange = function (e) {
+                dscan.scanFromFile(canvas, e.target.files[0]);
+            };
+        };
+    </script>
+</head>
+
+<body>
+<label for="file">Image</label>
+<input type="file"
+       id="file"
+       name="file"
+       accept="image/png, image/jpeg">
+<canvas></canvas>
+</body>
+
+</html>

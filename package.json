@@ -2,20 +2,28 @@
   "name": "d-scan",
   "version": "0.0.1",
   "description": "javascript document scanner",
+  "author": "coeps",
+  "license": "MIT",
   "main": "dist/main.js",
   "types": "./lib/main.d.ts",
   "scripts": {
-    "watch": "tsc -w",
-    "build": "tsc && cpx ./src/*.html ./dist"
+    "watch": "nodemon --watch ./src -e ts,html,css --exec npm run build",
+    "build": "run-p build:*",
+    "build:dependencies": "cpx ./node_modules/jsfeat/build/* ./dist/dependencies",
+    "build:typescript": "tsc",
+    "build:demos": "cpx ./src/demos/* ./dist/demos"
+  },
+  "dependencies": {
+    "jsfeat": "0.0.8"
+  },
+  "devDependencies": {
+    "cpx": "1.5.0",
+    "nodemon": "2.0.2",
+    "npm-run-all": "4.1.5",
+    "typescript": "3.7.5"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/coeps-github/d-scan.git"
-  },
-  "author": "coeps",
-  "license": "MIT",
-  "devDependencies": {
-    "cpx": "1.5.0",
-    "typescript": "3.7.5"
   }
 }
