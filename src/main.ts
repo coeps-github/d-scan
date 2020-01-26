@@ -1,8 +1,6 @@
 declare const jsfeat: any;
 
 class DScan {
-    constructor() {
-    }
 
     scanFromFile(canvas: HTMLCanvasElement, file: File) {
         const canvasWidth = canvas.width;
@@ -34,8 +32,8 @@ class DScan {
                 context2d.putImageData(imageData, 0, 0);
 
                 // Highpass Filter correction
-                const highPassLimit = 20;
-                this.applyHighPassFilter(imageData, highPassLimit);
+                const highPassLimit1 = 20;
+                this.applyHighPassFilter(imageData, highPassLimit1);
 
                 // Canvas update
                 context2d.putImageData(imageData, 0, 0);
@@ -77,7 +75,9 @@ class DScan {
                 const count = jsfeat.yape06.detect(imgU8, corners, border);
 
                 // Find Best Corners
-                const bestCorners = this.findCornerPoints(corners.slice(0, count));
+                const maxDistance = 4;
+                const highPassLimit2 = 90;
+                const bestCorners = this.findCornerPoints(imageData, corners.slice(0, count), maxDistance, highPassLimit2);
 
                 // Canvas update
                 context2d.putImageData(this.imgU8ToImageData(imgU8, imageData), 0, 0);
@@ -86,14 +86,17 @@ class DScan {
                 context2d.fillStyle = 'yellow';
                 for (let i = 0; i < count; ++i) {
                     const keyPoint = corners[i];
-                    context2d.fillRect(keyPoint.x, keyPoint.y, 4, 4);
+                    context2d.fillRect(keyPoint.x - 2, keyPoint.y - 2, 4, 4);
                 }
 
                 // Print Best Corners
-                context2d.fillStyle = 'red';
                 for (let i = 0; i < bestCorners.length; ++i) {
-                    const keyPoint = bestCorners[i];
-                    context2d.fillRect(keyPoint.x, keyPoint.y, 4, 4);
+                    const edgePoints = bestCorners[i];
+                    context2d.fillStyle = 'red';
+                    context2d.fillRect(edgePoints.point1.x - 2, edgePoints.point1.y - 2, 4, 4);
+                    context2d.fillRect(edgePoints.point2.x - 2, edgePoints.point2.y - 2, 4, 4);
+                    context2d.fillStyle = 'green';
+                    context2d.fillRect(edgePoints.midPoint.x - 2, edgePoints.midPoint.y - 2, 4, 4);
                 }
             };
         } else {
@@ -157,9 +160,9 @@ class DScan {
         return value;
     }
 
-    private findCornerPoints(points: Point[]): Point[] {
+    private findCornerPoints(imageData: ImageData, points: Point[], maxDistance: number, highPassLimit: number): EdgePoints[] {
         const bestCornerPoints = this.findMaxCornerPoints(points);
-        return this.findSquareAnglePoints(bestCornerPoints);
+        return this.findPointsCloseToEdges(imageData, bestCornerPoints, maxDistance, highPassLimit);
     }
 
     private findMaxCornerPoints(points: Point[]): BestCornerPoints {
@@ -167,7 +170,8 @@ class DScan {
             topLeft: [...points],
             topRight: [...points],
             bottomLeft: [...points],
-            bottomRight: [...points]
+            bottomRight: [...points],
+            length: points.length
         };
         bestCornerPoints.topLeft
             .sort((a, b) => (a.x + a.y) > (b.x + b.y) ? 1 : a.x === b.x && a.y === b.y ? 0 : -1);
@@ -180,78 +184,76 @@ class DScan {
         return bestCornerPoints;
     }
 
-    private findSquareAnglePoints(points: BestCornerPoints): Point[] {
-        // let topLeftSquareAngle = false;
-        let topLeftIndex = 0;
-        // let topRightSquareAngle = false;
-        let topRightIndex = 0;
-        // let bottomLeftSquareAngle = false;
-        let bottomLeftIndex = 0;
-        // let bottomRightSquareAngle = false;
-        let bottomRightIndex = 0;
-        // const allSquareAngles = () => topLeftSquareAngle && topRightSquareAngle && bottomLeftSquareAngle && bottomRightSquareAngle;
-        // const isSquareAngle = (angle: number) => angle < 48 && angle > 42;
-        // while (!allSquareAngles()) {
-        //     if (!topLeftSquareAngle) {
-        //         topLeftSquareAngle = isSquareAngle(
-        //             this.calculateAngle(
-        //                 points.topLeft[topLeftIndex],
-        //                 points.bottomLeft[bottomLeftIndex],
-        //                 points.topRight[topRightIndex]
-        //             )
-        //         );
-        //         if (!topLeftSquareAngle) {
-        //             ++topLeftIndex;
-        //         }
-        //     }
-        //     if (!topRightSquareAngle) {
-        //         topRightSquareAngle = isSquareAngle(
-        //             this.calculateAngle(
-        //                 points.topRight[topRightIndex],
-        //                 points.topLeft[topLeftIndex],
-        //                 points.bottomRight[bottomRightIndex],
-        //
-        //             )
-        //         );
-        //         if (!topRightSquareAngle) {
-        //             ++topRightIndex;
-        //         }
-        //     }
-        //     if (!bottomLeftSquareAngle) {
-        //         bottomLeftSquareAngle = isSquareAngle(
-        //             this.calculateAngle(
-        //                 points.bottomLeft[bottomLeftIndex],
-        //                 points.bottomRight[bottomRightIndex],
-        //                 points.topLeft[topLeftIndex],
-        //
-        //             )
-        //         );
-        //         if (!bottomLeftSquareAngle) {
-        //             ++bottomLeftIndex;
-        //         }
-        //     }
-        //     if (!bottomRightSquareAngle) {
-        //         bottomRightSquareAngle = isSquareAngle(
-        //             this.calculateAngle(
-        //                 points.bottomRight[bottomRightIndex],
-        //                 points.bottomLeft[bottomLeftIndex],
-        //                 points.topRight[topRightIndex],
-        //             )
-        //         );
-        //         if (!bottomRightSquareAngle) {
-        //             ++bottomRightIndex;
-        //         }
-        //     }
-        // }
-        return [points.topLeft[topLeftIndex], points.topRight[topRightIndex], points.bottomLeft[bottomLeftIndex], points.bottomRight[bottomRightIndex]];
+    private findPointsCloseToEdges(imageData: ImageData, points: BestCornerPoints, maxDistance: number, highPassLimit: number): EdgePoints[] {
+        const left = this.findPointsCloseToEdge(imageData, points.topLeft, points.bottomLeft, points.length, maxDistance, highPassLimit);
+        const top = this.findPointsCloseToEdge(imageData, points.topLeft, points.topRight, points.length, maxDistance, highPassLimit);
+        const right = this.findPointsCloseToEdge(imageData, points.topRight, points.bottomRight, points.length, maxDistance, highPassLimit);
+        const bottom = this.findPointsCloseToEdge(imageData, points.bottomRight, points.bottomLeft, points.length, maxDistance, highPassLimit);
+        return [left, top, right, bottom];
     }
 
-    // private calculateAngle(point1: Point, point2: Point, point3: Point): number {
-    //     const radians = Math.abs(Math.atan2(point3.y - point1.y, point3.x - point1.x) - Math.atan2(point2.y - point1.y, point2.x - point1.x));
-    //     const degree = radians * (180/Math.PI);
-    //     const normalized = Math.min(degree, Math.abs(180-degree));
-    //     return normalized;
-    // }
+    private findPointsCloseToEdge(imageData: ImageData, points1: Point[], points2: Point[], maxIndex: number, maxDistance: number, highPassLimit: number): EdgePoints {
+        const indexMods = [
+            {i1: 0, i2: 0},
+            {i1: 1, i2: 0},
+            {i1: 0, i2: 1},
+            {i1: 1, i2: 1}
+        ];
+        for (let pIndex = 0; pIndex < maxIndex; ++pIndex) {
+            for (let mIndex = 0; mIndex < 4; ++mIndex) {
+                const index1 = pIndex + indexMods[mIndex].i1;
+                const index2 = pIndex + indexMods[mIndex].i2;
+                const midPoint = this.findPointBetween(points1[index1], points2[index2]);
+                if (this.pointIsCloseToEdge(imageData, midPoint, maxDistance, highPassLimit)) {
+                    return {
+                        point1: points1[index1],
+                        point2: points2[index2],
+                        midPoint
+                    };
+                }
+            }
+        }
+        const point1 = points1[0];
+        const point2 = points2[0];
+        return {
+            point1,
+            point2,
+            midPoint: this.findPointBetween(point1, point2)
+        };
+    }
+
+    private findPointBetween(point1: Point, point2: Point, location = 0.5): Point {
+        return {
+            x: Math.round(point1.x + location * (point2.x - point1.x)),
+            y: Math.round(point1.y + location * (point2.y - point1.y)),
+        };
+    }
+
+    private pointIsCloseToEdge(imageData: ImageData, point: Point, maxDistance: number, highPassLimit: number): boolean {
+        const limit = 255 * (highPassLimit / 100);
+        for (let i = 0; i < maxDistance; ++i) {
+            const posX = point.x + i;
+            const negX = point.x - i;
+            const posY = point.y + i;
+            const negY = point.y - i;
+            const topLeft = this.getFirstColorIndexForCoord(negX, negY, imageData.width);
+            const topRight = this.getFirstColorIndexForCoord(posX, negY, imageData.width);
+            const bottomRight = this.getFirstColorIndexForCoord(posX, posY, imageData.width);
+            const bottomLeft = this.getFirstColorIndexForCoord(negX, posY, imageData.width);
+            const topLeftNormColor = (imageData.data[topLeft] + imageData.data[topLeft + 1] + imageData.data[topLeft + 2]) / 3;
+            const topRightNormColor = (imageData.data[topRight] + imageData.data[topRight + 1] + imageData.data[topRight + 2]) / 3;
+            const bottomRightNormColor = (imageData.data[bottomRight] + imageData.data[bottomRight + 1] + imageData.data[bottomRight + 2]) / 3;
+            const bottomLeftNormColor = (imageData.data[bottomLeft] + imageData.data[bottomLeft + 1] + imageData.data[bottomLeft + 2]) / 3;
+            if (topLeftNormColor > limit || topRightNormColor > limit || bottomRightNormColor > limit || bottomLeftNormColor > limit) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private getFirstColorIndexForCoord(x: number, y: number, width: number): number {
+        return y * (width * 4) + x * 4;
+    }
 }
 
 interface Point {
@@ -264,4 +266,11 @@ interface BestCornerPoints {
     readonly topRight: Point[];
     readonly bottomLeft: Point[];
     readonly bottomRight: Point[];
+    readonly length: number;
+}
+
+interface EdgePoints {
+    readonly point1: Point;
+    readonly point2: Point;
+    readonly midPoint: Point;
 }
