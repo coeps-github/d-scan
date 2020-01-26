@@ -21,9 +21,13 @@ class DScan {
 
                 // JSFeat init
                 const imgU8 = new jsfeat.matrix_t(imgWidth, imgHeight, jsfeat.U8_t | jsfeat.C1_t);
+                const corners = [];
+                for (let i = 0; i < imgU8.cols * imgU8.rows; ++i) {
+                    corners[i] = new jsfeat.keypoint_t(0, 0, 0, 0);
+                }
 
                 // Contrast correction
-                const contrast = 50;
+                const contrast = 20;
                 this.applyContrast(imageData, contrast);
 
                 // Canvas update
@@ -59,31 +63,36 @@ class DScan {
                 context2d.putImageData(this.imgU8ToImageData(imgU8, imageData), 0, 0);
 
                 // JSFeat Canny Edge Detection
-                const lowThreshold = 10;
+                const lowThreshold = 75;
                 const highThreshold = 200;
                 jsfeat.imgproc.canny(imgU8, imgU8, lowThreshold, highThreshold);
 
                 // Canvas update
                 context2d.putImageData(this.imgU8ToImageData(imgU8, imageData), 0, 0);
 
-                // JSFeat Fast Corner Detection
+                // JSFeat YAPE06 Corner Detection
                 const border = 4;
                 jsfeat.yape06.laplacian_threshold = 30;
                 jsfeat.yape06.min_eigen_value_threshold = 25;
-                let corners = [];
-                for (let i = 0; i < imgU8.cols * imgU8.rows; ++i) {
-                    corners[i] = new jsfeat.keypoint_t(0, 0, 0, 0);
-                }
                 const count = jsfeat.yape06.detect(imgU8, corners, border);
 
-                console.log(count);
+                // Find Best Corners
+                const bestCorners = this.findCornerPoints(corners.slice(0, count));
 
                 // Canvas update
                 context2d.putImageData(this.imgU8ToImageData(imgU8, imageData), 0, 0);
 
-                context2d.fillStyle = 'red';
+                // Print All Corners
+                context2d.fillStyle = 'yellow';
                 for (let i = 0; i < count; ++i) {
                     const keyPoint = corners[i];
+                    context2d.fillRect(keyPoint.x, keyPoint.y, 4, 4);
+                }
+
+                // Print Best Corners
+                context2d.fillStyle = 'red';
+                for (let i = 0; i < bestCorners.length; ++i) {
+                    const keyPoint = bestCorners[i];
                     context2d.fillRect(keyPoint.x, keyPoint.y, 4, 4);
                 }
             };
@@ -139,7 +148,7 @@ class DScan {
         return imageData;
     }
 
-    private truncateColor(value: number) {
+    private truncateColor(value: number): number {
         if (value < 0) {
             value = 0;
         } else if (value > 255) {
@@ -147,4 +156,112 @@ class DScan {
         }
         return value;
     }
+
+    private findCornerPoints(points: Point[]): Point[] {
+        const bestCornerPoints = this.findMaxCornerPoints(points);
+        return this.findSquareAnglePoints(bestCornerPoints);
+    }
+
+    private findMaxCornerPoints(points: Point[]): BestCornerPoints {
+        const bestCornerPoints = {
+            topLeft: [...points],
+            topRight: [...points],
+            bottomLeft: [...points],
+            bottomRight: [...points]
+        };
+        bestCornerPoints.topLeft
+            .sort((a, b) => (a.x + a.y) > (b.x + b.y) ? 1 : a.x === b.x && a.y === b.y ? 0 : -1);
+        bestCornerPoints.topRight
+            .sort((a, b) => (a.x - a.y) < (b.x - b.y) ? 1 : a.x === b.x && a.y === b.y ? 0 : -1);
+        bestCornerPoints.bottomLeft
+            .sort((a, b) => (a.x - a.y) > (b.x - b.y) ? 1 : a.x === b.x && a.y === b.y ? 0 : -1);
+        bestCornerPoints.bottomRight
+            .sort((a, b) => (a.x + a.y) < (b.x + b.y) ? 1 : a.x === b.x && a.y === b.y ? 0 : -1);
+        return bestCornerPoints;
+    }
+
+    private findSquareAnglePoints(points: BestCornerPoints): Point[] {
+        // let topLeftSquareAngle = false;
+        let topLeftIndex = 0;
+        // let topRightSquareAngle = false;
+        let topRightIndex = 0;
+        // let bottomLeftSquareAngle = false;
+        let bottomLeftIndex = 0;
+        // let bottomRightSquareAngle = false;
+        let bottomRightIndex = 0;
+        // const allSquareAngles = () => topLeftSquareAngle && topRightSquareAngle && bottomLeftSquareAngle && bottomRightSquareAngle;
+        // const isSquareAngle = (angle: number) => angle < 48 && angle > 42;
+        // while (!allSquareAngles()) {
+        //     if (!topLeftSquareAngle) {
+        //         topLeftSquareAngle = isSquareAngle(
+        //             this.calculateAngle(
+        //                 points.topLeft[topLeftIndex],
+        //                 points.bottomLeft[bottomLeftIndex],
+        //                 points.topRight[topRightIndex]
+        //             )
+        //         );
+        //         if (!topLeftSquareAngle) {
+        //             ++topLeftIndex;
+        //         }
+        //     }
+        //     if (!topRightSquareAngle) {
+        //         topRightSquareAngle = isSquareAngle(
+        //             this.calculateAngle(
+        //                 points.topRight[topRightIndex],
+        //                 points.topLeft[topLeftIndex],
+        //                 points.bottomRight[bottomRightIndex],
+        //
+        //             )
+        //         );
+        //         if (!topRightSquareAngle) {
+        //             ++topRightIndex;
+        //         }
+        //     }
+        //     if (!bottomLeftSquareAngle) {
+        //         bottomLeftSquareAngle = isSquareAngle(
+        //             this.calculateAngle(
+        //                 points.bottomLeft[bottomLeftIndex],
+        //                 points.bottomRight[bottomRightIndex],
+        //                 points.topLeft[topLeftIndex],
+        //
+        //             )
+        //         );
+        //         if (!bottomLeftSquareAngle) {
+        //             ++bottomLeftIndex;
+        //         }
+        //     }
+        //     if (!bottomRightSquareAngle) {
+        //         bottomRightSquareAngle = isSquareAngle(
+        //             this.calculateAngle(
+        //                 points.bottomRight[bottomRightIndex],
+        //                 points.bottomLeft[bottomLeftIndex],
+        //                 points.topRight[topRightIndex],
+        //             )
+        //         );
+        //         if (!bottomRightSquareAngle) {
+        //             ++bottomRightIndex;
+        //         }
+        //     }
+        // }
+        return [points.topLeft[topLeftIndex], points.topRight[topRightIndex], points.bottomLeft[bottomLeftIndex], points.bottomRight[bottomRightIndex]];
+    }
+
+    // private calculateAngle(point1: Point, point2: Point, point3: Point): number {
+    //     const radians = Math.abs(Math.atan2(point3.y - point1.y, point3.x - point1.x) - Math.atan2(point2.y - point1.y, point2.x - point1.x));
+    //     const degree = radians * (180/Math.PI);
+    //     const normalized = Math.min(degree, Math.abs(180-degree));
+    //     return normalized;
+    // }
+}
+
+interface Point {
+    readonly x: number;
+    readonly y: number;
+}
+
+interface BestCornerPoints {
+    readonly topLeft: Point[];
+    readonly topRight: Point[];
+    readonly bottomLeft: Point[];
+    readonly bottomRight: Point[];
 }
