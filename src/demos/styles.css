@@ -88,5 +88,4 @@ canvas {
     display: block;
     border: 1px solid grey;
     width: 100%;
-    height: calc(100% * 0.66);
 }
