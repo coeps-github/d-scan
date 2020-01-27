@@ -13,8 +13,8 @@ class DScan {
 
                 const imgRatio = imgHeight / imgWidth;
 
-                const canvasWidth = 300;
-                const canvasHeight = 300 * imgRatio;
+                const canvasWidth = 200;
+                const canvasHeight = 200 * imgRatio;
 
                 canvas.width = canvasWidth;
                 canvas.height = canvasHeight;
@@ -107,10 +107,10 @@ class DScan {
 
                 // Print Max Corner Points
                 context2d.fillStyle = 'white';
-                context2d.fillRect(maxCorners.topLeft[0].x - 2, maxCorners.topLeft[0].y - 2, 4, 4);
-                context2d.fillRect(maxCorners.topRight[0].x - 2, maxCorners.topRight[0].y - 2, 4, 4);
-                context2d.fillRect(maxCorners.bottomRight[0].x - 2, maxCorners.bottomRight[0].y - 2, 4, 4);
-                context2d.fillRect(maxCorners.bottomLeft[0].x - 2, maxCorners.bottomLeft[0].y - 2, 4, 4);
+                context2d.fillRect(maxCorners.topLeft[0].x - 2, maxCorners.topLeft[0].y - 2, 5, 5);
+                context2d.fillRect(maxCorners.topRight[0].x - 2, maxCorners.topRight[0].y - 2, 5, 5);
+                context2d.fillRect(maxCorners.bottomRight[0].x - 2, maxCorners.bottomRight[0].y - 2, 5, 5);
+                context2d.fillRect(maxCorners.bottomLeft[0].x - 2, maxCorners.bottomLeft[0].y - 2, 5, 5);
 
                 // Print Best Corner Points
                 bestCorners.forEach(cornerPoints => {
@@ -119,10 +119,10 @@ class DScan {
                     } else {
                         context2d.fillStyle = 'orange';
                     }
-                    context2d.fillRect(cornerPoints.point1.x - 2, cornerPoints.point1.y - 2, 4, 4);
-                    context2d.fillRect(cornerPoints.point2.x - 2, cornerPoints.point2.y - 2, 4, 4);
+                    context2d.fillRect(cornerPoints.point1.x - 2, cornerPoints.point1.y - 2, 5, 5);
+                    context2d.fillRect(cornerPoints.point2.x - 2, cornerPoints.point2.y - 2, 5, 5);
                     context2d.fillStyle = 'green';
-                    context2d.fillRect(cornerPoints.measuredMidPoint.point.x - 2, cornerPoints.measuredMidPoint.point.y - 2, 4, 4);
+                    context2d.fillRect(cornerPoints.measuredMidPoint.point.x - 2, cornerPoints.measuredMidPoint.point.y - 2, 5, 5);
                     context2d.fillStyle = 'blue';
                     cornerPoints.measuredMidPoint.midPointMeasurements.forEach(measurement => {
                         context2d.fillRect(measurement.posX, measurement.posY, 1, 1);
