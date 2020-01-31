@@ -95,7 +95,8 @@ export class DScan {
                 const count = jsfeat.yape06.detect(imgU8, corners, border);
 
                 // Find Max Corner Points
-                const maxCorners = findMaxCornerPoints(corners.slice(0, count));
+                const pointLimitPerCorner = 4;
+                const maxCorners = findMaxCornerPoints(corners.slice(0, count), pointLimitPerCorner);
 
                 // Find Best Corner Points
                 const maxDistance = 4;

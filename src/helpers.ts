@@ -53,23 +53,22 @@ export function truncateColor(value: number): number {
     return value;
 }
 
-export function findMaxCornerPoints(points: Point[]): MaxCornerPoints {
-    const maxCornerPoints = {
-        topLeft: [...points],
-        topRight: [...points],
-        bottomLeft: [...points],
-        bottomRight: [...points],
-        length: points.length
+export function findMaxCornerPoints(points: Point[], pointLimitPerCorner: number): MaxCornerPoints {
+    return {
+        topLeft: [...points]
+            .sort((a, b) => (a.x + a.y) > (b.x + b.y) ? 1 : a.x === b.x && a.y === b.y ? 0 : -1)
+            .filter((_, index) => index < pointLimitPerCorner),
+        topRight: [...points]
+            .sort((a, b) => (a.x - a.y) < (b.x - b.y) ? 1 : a.x === b.x && a.y === b.y ? 0 : -1)
+            .filter((_, index) => index < pointLimitPerCorner),
+        bottomLeft: [...points]
+            .sort((a, b) => (a.x - a.y) > (b.x - b.y) ? 1 : a.x === b.x && a.y === b.y ? 0 : -1)
+            .filter((_, index) => index < pointLimitPerCorner),
+        bottomRight: [...points]
+            .sort((a, b) => (a.x + a.y) < (b.x + b.y) ? 1 : a.x === b.x && a.y === b.y ? 0 : -1)
+            .filter((_, index) => index < pointLimitPerCorner),
+        length: pointLimitPerCorner
     };
-    maxCornerPoints.topLeft
-        .sort((a, b) => (a.x + a.y) > (b.x + b.y) ? 1 : a.x === b.x && a.y === b.y ? 0 : -1);
-    maxCornerPoints.topRight
-        .sort((a, b) => (a.x - a.y) < (b.x - b.y) ? 1 : a.x === b.x && a.y === b.y ? 0 : -1);
-    maxCornerPoints.bottomLeft
-        .sort((a, b) => (a.x - a.y) > (b.x - b.y) ? 1 : a.x === b.x && a.y === b.y ? 0 : -1);
-    maxCornerPoints.bottomRight
-        .sort((a, b) => (a.x + a.y) < (b.x + b.y) ? 1 : a.x === b.x && a.y === b.y ? 0 : -1);
-    return maxCornerPoints;
 }
 
 export const quadIndexTruthTable = [
@@ -101,41 +100,43 @@ export function findBestCornerPoints(imageData: ImageData, points: MaxCornerPoin
     const points3 = points.bottomRight;
     const points4 = points.bottomLeft;
     const edgePoints: EdgePoints[] = [];
-    for (let pIndex = 0; pIndex < points.length; ++pIndex) {
-        for (let mIndex = 0; mIndex < 16; ++mIndex) {
-            const index1 = pIndex + quadIndexTruthTable[mIndex].i1;
-            const index2 = pIndex + quadIndexTruthTable[mIndex].i2;
-            const index3 = pIndex + quadIndexTruthTable[mIndex].i3;
-            const index4 = pIndex + quadIndexTruthTable[mIndex].i4;
-            const midPoint1 = findMidPoint(points1[index1], points2[index2]);
-            const midPoint2 = findMidPoint(points2[index2], points3[index3]);
-            const midPoint3 = findMidPoint(points3[index3], points4[index4]);
-            const midPoint4 = findMidPoint(points4[index4], points1[index1]);
-            const measuredMidPoint1 = midPointIsCloseToEdge(imageData, midPoint1, maxDistance, highPassLimit);
-            const measuredMidPoint2 = midPointIsCloseToEdge(imageData, midPoint2, maxDistance, highPassLimit);
-            const measuredMidPoint3 = midPointIsCloseToEdge(imageData, midPoint3, maxDistance, highPassLimit);
-            const measuredMidPoint4 = midPointIsCloseToEdge(imageData, midPoint4, maxDistance, highPassLimit);
-            if (measuredMidPoint1.hitEdge && measuredMidPoint2.hitEdge && measuredMidPoint3.hitEdge && measuredMidPoint4.hitEdge) {
-                edgePoints.push({
-                    point1: points1[index1],
-                    point2: points2[index2],
-                    point3: points3[index3],
-                    point4: points4[index4],
-                    allEdges: true,
-                    areaSize: getAreaSize(points1[index1], points2[index2], points3[index3], points4[index4]),
-                    measuredMidPoints: [measuredMidPoint1, measuredMidPoint2, measuredMidPoint3, measuredMidPoint4]
-                });
-                return edgePoints;
-            } else {
-                edgePoints.push({
-                    point1: points1[index1],
-                    point2: points2[index2],
-                    point3: points3[index3],
-                    point4: points4[index4],
-                    allEdges: false,
-                    areaSize: getAreaSize(points1[index1], points2[index2], points3[index3], points4[index4]),
-                    measuredMidPoints: [measuredMidPoint1, measuredMidPoint2, measuredMidPoint3, measuredMidPoint4]
-                });
+    if (points.length > 1) {
+        for (let pIndex = 0; pIndex < points.length - 1; ++pIndex) {
+            for (let mIndex = 0; mIndex < 16; ++mIndex) {
+                const index1 = pIndex + quadIndexTruthTable[mIndex].i1;
+                const index2 = pIndex + quadIndexTruthTable[mIndex].i2;
+                const index3 = pIndex + quadIndexTruthTable[mIndex].i3;
+                const index4 = pIndex + quadIndexTruthTable[mIndex].i4;
+                const midPoint1 = findMidPoint(points1[index1], points2[index2]);
+                const midPoint2 = findMidPoint(points2[index2], points3[index3]);
+                const midPoint3 = findMidPoint(points3[index3], points4[index4]);
+                const midPoint4 = findMidPoint(points4[index4], points1[index1]);
+                const measuredMidPoint1 = midPointIsCloseToEdge(imageData, midPoint1, maxDistance, highPassLimit);
+                const measuredMidPoint2 = midPointIsCloseToEdge(imageData, midPoint2, maxDistance, highPassLimit);
+                const measuredMidPoint3 = midPointIsCloseToEdge(imageData, midPoint3, maxDistance, highPassLimit);
+                const measuredMidPoint4 = midPointIsCloseToEdge(imageData, midPoint4, maxDistance, highPassLimit);
+                if (measuredMidPoint1.hitEdge && measuredMidPoint2.hitEdge && measuredMidPoint3.hitEdge && measuredMidPoint4.hitEdge) {
+                    edgePoints.push({
+                        point1: points1[index1],
+                        point2: points2[index2],
+                        point3: points3[index3],
+                        point4: points4[index4],
+                        allEdges: true,
+                        areaSize: getAreaSize(points1[index1], points2[index2], points3[index3], points4[index4]),
+                        measuredMidPoints: [measuredMidPoint1, measuredMidPoint2, measuredMidPoint3, measuredMidPoint4]
+                    });
+                    return edgePoints;
+                } else {
+                    edgePoints.push({
+                        point1: points1[index1],
+                        point2: points2[index2],
+                        point3: points3[index3],
+                        point4: points4[index4],
+                        allEdges: false,
+                        areaSize: getAreaSize(points1[index1], points2[index2], points3[index3], points4[index4]),
+                        measuredMidPoints: [measuredMidPoint1, measuredMidPoint2, measuredMidPoint3, measuredMidPoint4]
+                    });
+                }
             }
         }
     }
