@@ -1,6 +1,7 @@
 import {
     applyBrightness,
     applyContrast,
+    applyCorrections,
     applyHighPassFilter,
     findBestCornerPoints,
     findMaxCornerPoints,
@@ -31,11 +32,11 @@ export class DScan {
                 const calcWidth = canvasWidth;
                 const calcHeight = canvasHeight;
 
+                const debug = false;
+
                 // Canvas init
                 context2d.drawImage(img, 0, 0, imgWidth, imgHeight, 0, 0, canvasWidth, canvasHeight);
                 const imageData = context2d.getImageData(0, 0, calcWidth, calcHeight);
-
-                const startTime = Date.now();
 
                 // JSFeat init
                 const imgU8 = new jsfeat.matrix_t(calcWidth, calcHeight, jsfeat.U8_t | jsfeat.C1_t);
@@ -44,33 +45,38 @@ export class DScan {
                     corners[i] = new jsfeat.keypoint_t(0, 0, 0, 0);
                 }
 
+                const startTime = Date.now();
+
                 // Contrast correction
                 const contrast = 20;
-                applyContrast(imageData, contrast);
+                debug && applyContrast(imageData, contrast);
 
                 // Canvas update
-                context2d.putImageData(imageData, 0, 0);
+                debug && context2d.putImageData(imageData, 0, 0);
 
                 // Highpass Filter correction
                 const highPassLimit1 = 20;
-                applyHighPassFilter(imageData, highPassLimit1);
+                debug && applyHighPassFilter(imageData, highPassLimit1);
 
                 // Canvas update
-                context2d.putImageData(imageData, 0, 0);
+                debug && context2d.putImageData(imageData, 0, 0);
 
                 // Brightness correction
                 const brightness = 20;
-                applyBrightness(imageData, brightness);
+                debug && applyBrightness(imageData, brightness);
+
+                // All Corrections
+                !debug && applyCorrections(imageData, contrast, highPassLimit1, brightness);
 
                 // Canvas update
-                context2d.putImageData(imageData, 0, 0);
+                debug && context2d.putImageData(imageData, 0, 0);
 
                 // JSFeat Grayscale
                 const colorGray = jsfeat.COLOR_RGBA2GRAY;
                 jsfeat.imgproc.grayscale(imageData.data, calcWidth, calcHeight, imgU8, colorGray);
 
                 // Canvas update
-                context2d.putImageData(imgU8ToImageData(imgU8, imageData), 0, 0);
+                debug && context2d.putImageData(imgU8ToImageData(imgU8, imageData), 0, 0);
 
                 // JSFeat Gaussian Blur
                 const kernelSize = 4;
@@ -78,7 +84,7 @@ export class DScan {
                 jsfeat.imgproc.gaussian_blur(imgU8, imgU8, kernelSize, sigma);
 
                 // Canvas update
-                context2d.putImageData(imgU8ToImageData(imgU8, imageData), 0, 0);
+                debug && context2d.putImageData(imgU8ToImageData(imgU8, imageData), 0, 0);
 
                 // JSFeat Canny Edge Detection
                 const lowThreshold = 75;
@@ -86,13 +92,16 @@ export class DScan {
                 jsfeat.imgproc.canny(imgU8, imgU8, lowThreshold, highThreshold);
 
                 // Canvas update
-                context2d.putImageData(imgU8ToImageData(imgU8, imageData), 0, 0);
+                debug && context2d.putImageData(imgU8ToImageData(imgU8, imageData), 0, 0);
 
                 // JSFeat YAPE06 Corner Detection
                 const border = 5;
                 jsfeat.yape06.laplacian_threshold = 30;
                 jsfeat.yape06.min_eigen_value_threshold = 25;
                 const count = jsfeat.yape06.detect(imgU8, corners, border);
+
+                // Update ImageData after JSFeat finished updating imgU8
+                imgU8ToImageData(imgU8, imageData);
 
                 // Find Max Corner Points
                 const pointLimitPerCorner = 4;

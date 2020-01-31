@@ -11,37 +11,49 @@ export function imgU8ToImageData(imgU8: any, imageData: ImageData): ImageData {
     return imageData;
 }
 
-export function applyContrast(imageData: ImageData, contrast: number): ImageData {
-    const factor = (259.0 * (contrast + 255.0)) / (255.0 * (259.0 - contrast));
+export function modifyImageData(imageData: ImageData, indexes: number[], modifierFn: (data: number) => number) {
     let i = imageData.width * imageData.height * 4;
     while ((i = i - 4) >= 0) {
-        imageData.data[i] = truncateColor(factor * (imageData.data[i] - 128.0) + 128.0);
-        imageData.data[i + 1] = truncateColor(factor * (imageData.data[i + 1] - 128.0) + 128.0);
-        imageData.data[i + 2] = truncateColor(factor * (imageData.data[i + 2] - 128.0) + 128.0);
+        indexes.forEach(index => {
+            imageData.data[i + index] = modifierFn(imageData.data[i + index]);
+        });
     }
     return imageData;
+}
+
+export function convertContrastPercentToFactor(contrast: number) {
+    return (259.0 * (contrast + 255.0)) / (255.0 * (259.0 - contrast));
+}
+
+export function convertPercentTo255(percent: number) {
+    return 255 * (percent / 100);
+}
+
+export function applyContrast(imageData: ImageData, contrast: number): ImageData {
+    const factor = convertContrastPercentToFactor(contrast);
+    return modifyImageData(imageData, [0, 1, 2], (data) => truncateColor(factor * (data - 128.0) + 128.0));
 }
 
 export function applyHighPassFilter(imageData: ImageData, highPassLimit: number): ImageData {
-    const limit = 255 * (highPassLimit / 100);
-    let i = imageData.width * imageData.height * 4;
-    while ((i = i - 4) >= 0) {
-        imageData.data[i] = truncateColor(imageData.data[i] < limit ? limit : imageData.data[i]);
-        imageData.data[i + 1] = truncateColor(imageData.data[i + 1] < limit ? limit : imageData.data[i + 1]);
-        imageData.data[i + 2] = truncateColor(imageData.data[i + 2] < limit ? limit : imageData.data[i + 2]);
-    }
-    return imageData;
+    const limit = convertPercentTo255(highPassLimit);
+    return modifyImageData(imageData, [0, 1, 2], (data) => truncateColor(data < limit ? limit : data));
 }
 
 export function applyBrightness(imageData: ImageData, brightness: number): ImageData {
-    const level = 255 * (brightness / 100);
-    let i = imageData.width * imageData.height * 4;
-    while ((i = i - 4) >= 0) {
-        imageData.data[i] = truncateColor(imageData.data[i] + level);
-        imageData.data[i + 1] = truncateColor(imageData.data[i + 1] + level);
-        imageData.data[i + 2] = truncateColor(imageData.data[i + 2] + level);
-    }
-    return imageData;
+    const level = convertPercentTo255(brightness);
+    return modifyImageData(imageData, [0, 1, 2], (data) => truncateColor(data + level));
+}
+
+export function applyCorrections(imageData: ImageData, contrast: number, highPassLimit: number, brightness: number) {
+    const factor = convertContrastPercentToFactor(contrast);
+    const limit = convertPercentTo255(highPassLimit);
+    const level = convertPercentTo255(brightness);
+    return modifyImageData(imageData, [0, 1, 2], (data) => {
+        const contrastResult = truncateColor(factor * (data - 128.0) + 128.0);
+        const highPassLimitResult = truncateColor(contrastResult < limit ? limit : contrastResult);
+        const brightnessResult = truncateColor(highPassLimitResult + level);
+        return brightnessResult;
+    });
 }
 
 export function truncateColor(value: number): number {
