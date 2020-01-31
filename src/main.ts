@@ -123,21 +123,26 @@ export class DScan {
 
                 // Print Best Corner Points
                 bestCorners.forEach(cornerPoints => {
-                    if (cornerPoints.bestMatch) {
+                    console.log('Area: ' + cornerPoints.areaSize);
+                    if (cornerPoints.allEdges) {
                         context2d.fillStyle = 'red';
                     } else {
                         context2d.fillStyle = 'orange';
                     }
                     context2d.fillRect(cornerPoints.point1.x - 2, cornerPoints.point1.y - 2, 5, 5);
                     context2d.fillRect(cornerPoints.point2.x - 2, cornerPoints.point2.y - 2, 5, 5);
-                    context2d.fillStyle = 'green';
-                    context2d.fillRect(cornerPoints.measuredMidPoint.point.x - 2, cornerPoints.measuredMidPoint.point.y - 2, 5, 5);
-                    context2d.fillStyle = 'blue';
-                    cornerPoints.measuredMidPoint.midPointMeasurements.forEach(measurement => {
-                        context2d.fillRect(measurement.posX, measurement.posY, 1, 1);
-                        context2d.fillRect(measurement.posX, measurement.negY, 1, 1);
-                        context2d.fillRect(measurement.negX, measurement.posY, 1, 1);
-                        context2d.fillRect(measurement.negX, measurement.negY, 1, 1);
+                    context2d.fillRect(cornerPoints.point3.x - 2, cornerPoints.point3.y - 2, 5, 5);
+                    context2d.fillRect(cornerPoints.point4.x - 2, cornerPoints.point4.y - 2, 5, 5);
+                    cornerPoints.measuredMidPoints.forEach(midPoint => {
+                        context2d.fillStyle = 'green';
+                        context2d.fillRect(midPoint.point.x - 2, midPoint.point.y - 2, 5, 5);
+                        context2d.fillStyle = 'blue';
+                        midPoint.midPointMeasurements.forEach(measurement => {
+                            context2d.fillRect(measurement.posX, measurement.posY, 1, 1);
+                            context2d.fillRect(measurement.posX, measurement.negY, 1, 1);
+                            context2d.fillRect(measurement.negX, measurement.posY, 1, 1);
+                            context2d.fillRect(measurement.negX, measurement.negY, 1, 1);
+                        });
                     });
                 });
             };

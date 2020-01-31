@@ -14,8 +14,11 @@ export interface MaxCornerPoints {
 export interface EdgePoints {
     readonly point1: Point;
     readonly point2: Point;
-    readonly bestMatch: boolean;
-    readonly measuredMidPoint: MeasuredMidPoint;
+    readonly point3: Point;
+    readonly point4: Point;
+    readonly allEdges: boolean;
+    readonly areaSize: number;
+    readonly measuredMidPoints: MeasuredMidPoint[];
 }
 
 export interface MeasuredMidPoint {
