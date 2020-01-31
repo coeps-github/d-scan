@@ -1,6 +1,6 @@
 declare const jsfeat: any;
 
-class DScan {
+export class DScan {
 
     scanFromFile(canvas: HTMLCanvasElement, file: File) {
         const context2d = canvas.getContext('2d');
@@ -311,12 +311,12 @@ class DScan {
     }
 }
 
-interface Point {
+export interface Point {
     readonly x: number;
     readonly y: number;
 }
 
-interface MaxCornerPoints {
+export interface MaxCornerPoints {
     readonly topLeft: Point[];
     readonly topRight: Point[];
     readonly bottomLeft: Point[];
@@ -324,20 +324,20 @@ interface MaxCornerPoints {
     readonly length: number;
 }
 
-interface EdgePoints {
+export interface EdgePoints {
     readonly point1: Point;
     readonly point2: Point;
     readonly bestMatch: boolean;
     readonly measuredMidPoint: MeasuredMidPoint;
 }
 
-interface MeasuredMidPoint {
+export interface MeasuredMidPoint {
     readonly point: Point;
     readonly hitEdge: boolean;
     readonly midPointMeasurements: MidPointMeasurement[];
 }
 
-interface MidPointMeasurement {
+export interface MidPointMeasurement {
     readonly posX: number;
     readonly negX: number;
     readonly posY: number;

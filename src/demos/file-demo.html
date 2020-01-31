@@ -12,7 +12,7 @@
         window.onload = function () {
             const canvas = document.querySelector('canvas');
             const input = document.querySelector('input');
-            const dscan = new DScan();
+            const dscan = new Lib.DScan();
             input.onchange = function (e) {
                 const file = e.target.files[0];
                 if (file) {
